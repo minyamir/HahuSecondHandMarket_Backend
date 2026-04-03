@@ -1,0 +1,63 @@
+# ======================
+# NODE MODULES
+# ======================
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ======================
+# ENV FILES (IMPORTANT 🔐)
+# ======================
+.env
+.env.*
+!.env.example
+
+# ======================
+# BUILD FILES
+# ======================
+dist/
+build/
+.vite/
+
+# ======================
+# LOG FILES
+# ======================
+logs/
+*.log
+
+# ======================
+# OS FILES
+# ======================
+.DS_Store
+Thumbs.db
+
+# ======================
+# IDE / EDITOR
+# ======================
+.vscode/
+.idea/
+
+# ======================
+# UPLOADS (your project!)
+# ======================
+uploads/
+uploads/listings/
+uploads/nationalIds/
+
+# ======================
+# DATABASE
+# ======================
+*.sqlite
+*.db
+
+# ======================
+# TEMP FILES
+# ======================
+temp/
+tmp/
+
+node_modules/
+dist/
+build/
+.vite/
