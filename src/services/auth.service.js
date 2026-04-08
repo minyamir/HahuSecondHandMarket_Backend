@@ -21,24 +21,18 @@ export const registerUser = async ({ fullName, email, password, phone }) => {
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  const user = await User.create({
+ const user = await User.create({
     fullName: fullName.trim(),
-    email: normalizedEmail,
+    email: email.toLowerCase().trim(),
     password: hashedPassword,
     phone: phone || ""
   });
 
-  console.log("User created:", user.email);
-
-  try {
-    await sendWelcomeEmail({
-      toEmail: user.email,
-      fullName: user.fullName
-    });
-    console.log("Welcome email sent to:", user.email);
-  } catch (emailError) {
-    console.error("Welcome email failed:", emailError.message);
-  }
+  // Background task: Don't 'await' here if you want fast responses
+  sendWelcomeEmail({
+    toEmail: user.email,
+    fullName: user.fullName
+  }).catch(err => console.error("Non-blocking email failure:", err.message))
 
   const token = generateToken({
     id: user._id,
