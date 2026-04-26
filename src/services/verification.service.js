@@ -4,53 +4,65 @@ import { performDeepAudit } from '../ai/nationalIdDetection.js';
 import fs from 'fs';
 
 export const verifyIdentity = async (userId, files) => {
-    // 0. Fetch the registered user's name to compare against the ID
     const user = await User.findById(userId);
     if (!user) throw new Error("User context not found.");
 
-    // 1. Call the Forensic Deep Audit (Passing user name for AI comparison)
     const audit = await performDeepAudit(files, user.fullName);
 
-    // 2. THE "FCN" DUPLICATE LOCK
-    // Check if this National ID (FCN) is already used by someone else
-    const duplicateId = await Verification.findOne({ fcnNumber: audit.fcnNumber });
+    // 1. DUPLICATE FCN LOCK
+    const fcn = audit.fcnNumber || "UNKNOWN";
+    const duplicateId = await Verification.findOne({ fcnNumber: fcn });
     if (duplicateId && duplicateId.userId.toString() !== userId) {
         cleanupAllFiles(files);
         throw new Error("Security Alert: This National ID is already registered to another HaHu Market account.");
     }
 
-    // 3. Immediate Hard-Block Logic (Scam Detection)
-    if (audit.faceMatchScore < 40 || audit.decision === "REJECT" || !audit.qrMatch) {
+    // 2. HARD-BLOCK LOGIC (Scam/Fraud Prevention)
+    // We check audit.success or audit.decision directly from the AI bridge
+    if (audit.faceMatchScore < 40 || audit.decision === "REJECT") {
         cleanupAllFiles(files);
-        throw new Error(`Security Rejection: ${audit.reason}`);
+        throw new Error(`Security Rejection: ${audit.reason || "Biometric verification failed."}`);
     }
 
-    // 4. Determine Final Status
-    // Only auto-approve if ALL security checks pass perfectly
+    // 3. DATA NORMALIZATION & MAPPING
+    // Map AI JSON keys to your local logic
+    const trustScore = audit.faceMatchScore || 0;
+    const livenessOk = audit.videoLivenessConfirmed === true;
+    const earsOk = audit.earsVerified === true;
+    
+    // Normalize names (remove extra spaces/case sensitivity) to prevent false flags
+    const registeredName = user.fullName.trim().toLowerCase();
+    const idName = (audit.fullNameOnId || "").trim().toLowerCase();
+    const nameMatches = idName.includes(registeredName) || registeredName.includes(idName) || audit.nameMatches === true;
+
+    // 4. DETERMINE FINAL STATUS
     let finalStatus = 'approved';
-    if (
-        audit.faceMatchScore < 90 || 
-        !audit.earsVerified || 
-        !audit.blinkDetected || 
-        !audit.nameMatches
-    ) {
+
+    const triggersFlag = 
+        trustScore < 95 ||        // Raised threshold for auto-approval
+        !livenessOk || 
+        !earsOk || 
+        !nameMatches || 
+        audit.decision === "FLAG";
+
+    if (triggersFlag) {
         finalStatus = 'flagged';
     }
 
-    // 5. Update or Create the Verification Record
+    // 5. UPDATE OR CREATE RECORD
     const record = await Verification.findOneAndUpdate(
         { userId },
         {
-            fullNameOnId: audit.fullNameOnId,
-            fcnNumber: audit.fcnNumber,
+            fullNameOnId: audit.fullNameOnId || "Unknown",
+            fcnNumber: fcn,
             idImageFront: files.idFront[0].path, 
             idImageBack: files.idBack[0].path,
             faceFrontPath: files.faceFront[0].path,
             faceLeftPath: files.faceLeft[0].path,
             faceRightPath: files.faceRight[0].path,
-            blinkDetected: audit.blinkDetected,
-            earsVerified: audit.earsVerified,
-            trustScore: audit.faceMatchScore,
+            blinkDetected: livenessOk, // Mapping AI result to DB field
+            earsVerified: earsOk,
+            trustScore: trustScore,
             aiReason: audit.reason,
             status: finalStatus,
             $inc: { attempts: 1 },
@@ -59,7 +71,7 @@ export const verifyIdentity = async (userId, files) => {
         { upsert: true, new: true }
     );
 
-    // 6. Unlock User Capabilities
+    // 6. UNLOCK USER
     if (finalStatus === 'approved') {
         await User.findByIdAndUpdate(userId, { 
             isVerified: true,
@@ -67,15 +79,15 @@ export const verifyIdentity = async (userId, files) => {
         });
     }
 
-    // 7. Cleanup: Delete the heavy/sensitive video
-    if (fs.existsSync(files.livenessVideo[0].path)) {
+    // 7. CLEANUP SENSITIVE VIDEO
+    if (files.livenessVideo && files.livenessVideo[0] && fs.existsSync(files.livenessVideo[0].path)) {
         fs.unlinkSync(files.livenessVideo[0].path);
     }
 
     return { 
         success: finalStatus === 'approved', 
         status: finalStatus,
-        score: audit.faceMatchScore,
+        score: trustScore,
         message: finalStatus === 'flagged' 
             ? `Reviewing: ${audit.reason}`
             : "Verification successful! Welcome to the trusted seller community."
