@@ -1,8 +1,11 @@
+// src/constants/categories.js
 export const CATEGORIES = [
-  "electronics",
-  "fashion",
-  "home",
-  "books",
-  "vehicles",
-  "other"
+    "Electronics",      // Laptops, Phones, TVs
+    "Furniture",        // Beds, Tables, Sofas
+    "Bicycles",         // Very common in Bahir Dar / Campus
+    "Clothing",         // Shoes, Jackets
+    "Books",            // Textbooks, Novels
+    "Home Appliances",  // Stoves, Blenders, Fridges
+    "Sports Gear",      // Football boots, Jerseys
+    "Other"             // Miscellaneous items
 ];

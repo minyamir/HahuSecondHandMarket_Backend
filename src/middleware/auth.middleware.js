@@ -1,7 +1,8 @@
 import jwt from "jsonwebtoken";
 import { env } from "../config/env.js";
+import User from "../models/User.model.js"; // 1. Import your Model
 
-export const authMiddleware = (req, res, next) => {
+export const authMiddleware = async (req, res, next) => { // 2. Make it async
   try {
     const authHeader = req.headers.authorization;
 
@@ -15,7 +16,18 @@ export const authMiddleware = (req, res, next) => {
     const token = authHeader.split(" ")[1];
     const decoded = jwt.verify(token, env.jwtSecret);
 
-    req.user = decoded;
+    // 3. Fetch the LATEST data from the database
+    const freshUser = await User.findById(decoded.id);
+
+    if (!freshUser) {
+      return res.status(401).json({
+        success: false,
+        message: "User no longer exists"
+      });
+    }
+
+    // 4. Attach the real DB object, not just the token data
+    req.user = freshUser; 
     next();
   } catch (error) {
     return res.status(401).json({
