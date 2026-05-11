@@ -58,6 +58,7 @@ temp/
 tmp/
 
 node_modules/
+env
 dist/
 build/
 .vite/
