@@ -1,15 +1,3 @@
-Second-Hand Marketplace
+### Second-Hand Marketplace
 
-Engineered a secure backend with National ID verification and escrow payment logic to ensure trusted peer-to-peer transactions. Implemented AI-powered image moderation, fraud detection, and real-time logistics tracking for local delivery. in-app chat functionality, smart product recommendations, and role-based admin dashboards to improve platform security and user experience.
-
-More ideas you can add
-national id  verification for secure authentication
-AI-based fake product detection
-Real-time bidding/auction system
-Seller reputation & review system
-Location-based product discovery
-Push notifications for order updates
-Recommendation engine using user behavior
-Digital wallet integration
-Analytics dashboard for admins
-Cloud image storage & CDN optimizatio
+Developed a full-stack second-hand marketplace platform with secure escrow payment integration and National ID verification for trusted peer-to-peer transactions. Engineered scalable backend services supporting AI-powered image moderation, fake product detection, real-time logistics tracking, and in-app messaging. Implemented smart recommendation systems, location-based product discovery, seller reputation and review mechanisms, real-time bidding/auction functionality, and push notification services to enhance user engagement and platform reliability. Built role-based admin dashboards, analytics tools, digital wallet integration, and cloud-based media storage with CDN optimization for high performance and scalability.
